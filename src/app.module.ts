@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { ArticlesModule } from './articles/articles.module';
 import { BeatsModule } from './beats/beats.module';
 import { CategoriesModule } from './categories/categories.module';
 import { CommentsModule } from './comments/comments.module';
@@ -28,7 +27,6 @@ import { UsersModule } from './users/users.module';
         synchronize: true,
       }),
     }),
-    ArticlesModule,
     BeatsModule,
     CategoriesModule,
     CommentsModule,

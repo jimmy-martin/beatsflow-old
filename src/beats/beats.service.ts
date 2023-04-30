@@ -1,26 +1,108 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBeatDto } from './dto/create-beat.dto';
 import { UpdateBeatDto } from './dto/update-beat.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Beat } from './entities/beat.entity';
+import { Repository } from 'typeorm';
+import { Category } from 'src/categories/entities/category.entity';
+import { User } from 'src/users/entities/user.entity';
+import { CreateCommentDto } from 'src/comments/dto/create-comment.dto';
+import { Comment } from 'src/comments/entities/comment.entity';
 
 @Injectable()
 export class BeatsService {
-  create(createBeatDto: CreateBeatDto) {
-    return 'This action adds a new beat';
+  constructor(
+    @InjectRepository(Category)
+    private categoriesRepository: Repository<Category>,
+    @InjectRepository(Beat)
+    private beatsRepository: Repository<Beat>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    @InjectRepository(Comment)
+    private commentsRepository: Repository<Comment>,
+  ) {}
+
+  async create(createBeatDto: CreateBeatDto): Promise<Beat> {
+    const category = await this.categoriesRepository.findOne({
+      where: { id: createBeatDto.categoryId },
+    });
+
+    const user = await this.usersRepository.findOne({
+      where: { id: createBeatDto.userId },
+    });
+
+    if (!category || !user) {
+      throw new NotFoundException(
+        `Category ${createBeatDto.categoryId} or User ${createBeatDto.userId} not found`,
+      );
+    }
+
+    const newBeat = this.beatsRepository.create(createBeatDto);
+
+    newBeat.category = category;
+    newBeat.user = user;
+    newBeat.audioUrl = 'test.mp3';
+
+    return await this.beatsRepository.save(newBeat);
   }
 
-  findAll() {
-    return `This action returns all beats`;
+  async findAll(): Promise<Beat[]> {
+    return await this.beatsRepository.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} beat`;
+  async findOne(id: number): Promise<Beat> {
+    const beat = await this.beatsRepository.findOneBy({ id });
+    if (!beat) {
+      throw new NotFoundException(`Beat ${id} not found`);
+    }
+    return beat;
   }
 
-  update(id: number, updateBeatDto: UpdateBeatDto) {
-    return `This action updates a #${id} beat`;
+  async update(id: number, updateBeatDto: UpdateBeatDto): Promise<Beat> {
+    const beat = await this.beatsRepository.findOneBy({ id });
+    if (!beat) {
+      throw new NotFoundException(`Beat ${id} not found`);
+    }
+    this.beatsRepository.merge(beat, updateBeatDto);
+    return await this.beatsRepository.save(beat);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} beat`;
+  async remove(id: number): Promise<void> {
+    await this.beatsRepository.delete(id);
+  }
+
+  async createComment(
+    id: number,
+    createCommentDto: CreateCommentDto,
+  ): Promise<Comment> {
+    const beat = await this.beatsRepository.findOneBy({ id });
+    const user = await this.usersRepository.findOne({
+      where: { id: createCommentDto.authorId },
+    });
+
+    if (!beat || !user) {
+      throw new NotFoundException(
+        `Beat ${id} or User ${createCommentDto.authorId} not found`,
+      );
+    }
+
+    const newComment = this.commentsRepository.create(createCommentDto);
+
+    newComment.beat = beat;
+    newComment.author = user;
+
+    return await this.commentsRepository.save(newComment);
+  }
+
+  async getComments(id: number): Promise<Comment[]> {
+    const beat = await this.beatsRepository.findOneBy({ id });
+
+    if (!beat) {
+      throw new NotFoundException(`Beat ${id} not found`);
+    }
+
+    return await this.commentsRepository.find({
+      where: { beat: { id: beat.id } },
+    });
   }
 }
