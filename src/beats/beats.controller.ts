@@ -9,11 +9,15 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { BeatsService } from './beats.service';
 import { CreateBeatDto } from './dto/create-beat.dto';
 import { UpdateBeatDto } from './dto/update-beat.dto';
 import { CreateCommentDto } from 'src/comments/dto/create-comment.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { audioOptions, imageOptions } from 'src/multer/multerOptions';
 
 @Controller('beats')
 export class BeatsController {
@@ -59,5 +63,23 @@ export class BeatsController {
   @Get(':id/comments')
   getComments(@Param('id', ParseIntPipe) id: number) {
     return this.beatsService.getComments(id);
+  }
+
+  @Post(':id/uploadImage')
+  @UseInterceptors(FileInterceptor('image', imageOptions))
+  uploadImage(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() image: Express.Multer.File,
+  ) {
+    return this.beatsService.uploadImage(id, image);
+  }
+
+  @Post(':id/uploadAudio')
+  @UseInterceptors(FileInterceptor('audio', audioOptions))
+  uploadAudio(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() audio: Express.Multer.File,
+  ) {
+    return this.beatsService.uploadAudio(id, audio);
   }
 }

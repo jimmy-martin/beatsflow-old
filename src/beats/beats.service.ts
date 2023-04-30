@@ -8,6 +8,7 @@ import { Category } from 'src/categories/entities/category.entity';
 import { User } from 'src/users/entities/user.entity';
 import { CreateCommentDto } from 'src/comments/dto/create-comment.dto';
 import { Comment } from 'src/comments/entities/comment.entity';
+import { UploadsService } from 'src/uploads/uploads.service';
 
 @Injectable()
 export class BeatsService {
@@ -20,6 +21,7 @@ export class BeatsService {
     private usersRepository: Repository<User>,
     @InjectRepository(Comment)
     private commentsRepository: Repository<Comment>,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   async create(createBeatDto: CreateBeatDto): Promise<Beat> {
@@ -104,5 +106,37 @@ export class BeatsService {
     return await this.commentsRepository.find({
       where: { beat: { id: beat.id } },
     });
+  }
+
+  async uploadImage(id: number, file: Express.Multer.File): Promise<Beat> {
+    const beat = await this.beatsRepository.findOneBy({ id });
+
+    if (!beat) {
+      throw new NotFoundException(`Beat ${id} not found`);
+    }
+
+    if (beat.imageUrl && beat.imageUrl !== 'beats_placeholder.png') {
+      await this.uploadsService.deleteOldFile(beat.imageUrl);
+    }
+
+    const imagePath = `/uploads/image/${file.filename}`;
+    beat.imageUrl = imagePath;
+    return await this.beatsRepository.save(beat);
+  }
+
+  async uploadAudio(id: number, file: Express.Multer.File): Promise<Beat> {
+    const beat = await this.beatsRepository.findOneBy({ id });
+
+    if (!beat) {
+      throw new NotFoundException(`Beat ${id} not found`);
+    }
+
+    if (beat.audioUrl) {
+      await this.uploadsService.deleteOldFile(beat.audioUrl);
+    }
+
+    const audioPath = `/uploads/audio/${file.filename}`;
+    beat.audioUrl = audioPath;
+    return await this.beatsRepository.save(beat);
   }
 }
