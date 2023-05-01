@@ -9,6 +9,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { UsersModule } from './users/users.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { MulterModule } from '@nestjs/platform-express';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { MulterModule } from '@nestjs/platform-express';
     MulterModule.register({
       dest: './uploads',
     }),
+    AuthModule,
   ],
   controllers: [],
   providers: [],
